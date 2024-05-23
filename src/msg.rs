@@ -25,4 +25,5 @@ pub struct ValueResp {
 #[serde(rename_all = "snake_case")]
 pub enum ExecMsg {
     Donate {},
+    Withdraw {},
 }
