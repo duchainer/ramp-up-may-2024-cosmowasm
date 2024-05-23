@@ -29,6 +29,6 @@ pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> 
     use msg::QueryMsg::Value;
 
     match msg {
-        Value {} => to_json_binary(&query::value()),
+        Value { value } => to_json_binary(&query::value(value)),
     }
 }
