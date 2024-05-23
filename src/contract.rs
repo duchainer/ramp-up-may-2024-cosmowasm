@@ -14,17 +14,24 @@ pub mod query {
 }
 
 pub mod exec {
-    use cosmwasm_std::{Response, StdResult, Storage};
+    use cosmwasm_std::{MessageInfo, Response, StdResult, Storage};
 
-    use crate::state::COUNTER;
+    use crate::state::{COUNTER, MINIMAL_DONATION};
 
-    pub fn poke(storage: &mut dyn Storage, sender: &str) -> StdResult<Response> {
-        let new_value = COUNTER.load(storage)? + 1;
-        COUNTER.save(storage, &new_value)?;
+    pub fn donate(storage: &mut dyn Storage, info: &MessageInfo) -> StdResult<Response> {
+        let mut new_value = COUNTER.load(storage)?;
+        let minimal_donation = MINIMAL_DONATION.load(storage)?;
+
+        if info.funds.iter().any(|coin| {
+            coin.denom == minimal_donation.denom && coin.amount >= minimal_donation.amount
+        }) {
+            new_value += 1;
+            COUNTER.save(storage, &new_value)?;
+        }
 
         let resp = Response::new()
-            .add_attribute("action", "poke")
-            .add_attribute("sender", sender)
+            .add_attribute("action", "donate")
+            .add_attribute("sender", info.sender.as_str())
             .add_attribute("counter", new_value.to_string());
 
         Ok(resp)
