@@ -4,17 +4,20 @@ use cosmwasm_std::{
 };
 
 use crate::msg::QueryMsg;
+use crate::state::COUNTER;
 
 mod contract;
 pub mod msg;
+mod state;
 
 #[entry_point]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     _msg: Empty,
 ) -> StdResult<Response> {
+    COUNTER.save(deps.storage, &0)?;
     Ok(Response::new())
 }
 
@@ -24,13 +27,13 @@ pub fn execute(_deps: DepsMut, _env: Env, _info: MessageInfo, _msg: Empty) -> St
 }
 
 #[entry_point]
-pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     use contract::query;
     use msg::QueryMsg::{Value, ValueIncremented};
 
     match msg {
         ValueIncremented { value } => to_json_binary(&query::value_incremented(value)),
-        Value {} => to_json_binary(&query::value()),
+        Value {} => to_json_binary(&query::value(deps.storage)?),
     }
 }
 
