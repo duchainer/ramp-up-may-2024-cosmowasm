@@ -1,0 +1,51 @@
+You are a smart contract developer working on a donation project.
+Your platform lets people make donations to any Project,
+    a Project is just about anything under which CW20 Tokens are being collected on the contract.
+A Project can have a name and creator.
+Then any user can come to the contract and donate Tokens under a project.
+The contract always Counts
+ the donations received under the Project Via a given User
+and saves the amount of donation and issues.
+This information can be queried with their WALLET ADDRESSES.
+The donations are always sent to the PROJECT CREATORS WALLET ADDRESS.
+Contract needs to deduct :
+ - 10% if the Donation received is less than 10,000 CW 20 TOKENS,
+ - 5% if More than that.
+Fees collected are sent to the FEE COLLECTOR WALLET.
+
+===== ==== ===== API ==== ===== ====
+
+===== Execute ====
+- Donate
+  - Coin
+  - Project to donate to
+     - name
+     - creator
+     - address
+
+===== Query ====
+- AmountReceived
+  - Project wallet address
+
+- AmountGivenToProjectByUser
+  - Project wallet address
+  - User wallet
+
+
+
+===== ==== ===== STATE ==== ===== ====
+
+===== Addresses ====
+PROJECT CREATORS WALLET ADDRESS
+FEE COLLECTOR WALLET
+CONTRACT ADDRESS
+
+MANY DONOR'S WALLET ADDRESSES
+
+===== Other ====
+
+For each donation, save the donor and the amount
+
+
+
+======
