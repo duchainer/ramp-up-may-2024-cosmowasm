@@ -11,13 +11,14 @@ pub struct InitMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    ValueIncremented { value: u64 },
+    ValueIncremented { value: u128 },
+    DonationsSentToProject { project_address: Addr },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct ValueResp {
-    pub value: u64,
+    pub value: u128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

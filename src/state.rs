@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub struct Donation {
     pub(crate) donor: Addr,
-    pub(crate) amount: u128,
+    pub(crate) net_amount: u128,
+    pub(crate) total_amount: u128,
 }
 
 /// many Project to many { User to amount }

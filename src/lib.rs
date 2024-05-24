@@ -32,13 +32,15 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecMsg) -> StdR
 }
 
 #[entry_point]
-pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     use contract::query;
     use msg::QueryMsg::ValueIncremented;
 
     match msg {
         ValueIncremented { value } => to_json_binary(&query::value_incremented(value)),
-        // Value {} => to_json_binary(&query::value(deps.storage)?),
+        QueryMsg::DonationsSentToProject { project_address } => to_json_binary(
+            &query::donations_sent_to_project(deps.storage, project_address),
+        ),
     }
 }
 
@@ -48,7 +50,7 @@ mod tests {
     use cw_multi_test::{App, BasicApp, Contract, ContractWrapper, Executor};
 
     use crate::{execute, instantiate, query};
-    use crate::msg::ExecMsg;
+    use crate::msg::{ExecMsg, QueryMsg, ValueResp};
 
     #[track_caller]
     fn counting_contract() -> Box<dyn Contract<Empty>> {
@@ -100,7 +102,7 @@ mod tests {
 
         assert_eq!(
             app.wrap()
-                .query_balance(project_address, "cw20")
+                .query_balance(project_address.clone(), "cw20")
                 .expect("We should have some cw20 tokens")
                 .amount,
             Uint128::new(9)
@@ -113,6 +115,17 @@ mod tests {
                 .amount,
             Uint128::new(1)
         );
+
+        assert_eq!(
+            9,
+            app.wrap()
+                .query_wasm_smart::<ValueResp>(
+                    contract_addr,
+                    &QueryMsg::DonationsSentToProject { project_address },
+                )
+                .expect("We should be able to get a response from using DonationsSentToProject on the contract_addr ")
+                .value
+        )
     }
 }
 // Using :

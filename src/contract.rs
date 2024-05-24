@@ -1,8 +1,25 @@
 pub mod query {
-    use crate::msg::ValueResp;
+    use cosmwasm_std::{Addr, Storage};
 
-    pub fn value_incremented(n: u64) -> ValueResp {
+    use crate::msg::ValueResp;
+    use crate::state::DONATIONS;
+
+    pub fn value_incremented(n: u128) -> ValueResp {
         ValueResp { value: n + 1 }
+    }
+
+    pub(crate) fn donations_sent_to_project(
+        storage: &dyn Storage,
+        project_address: Addr,
+    ) -> ValueResp {
+        match DONATIONS.load(storage, &project_address) {
+            Err(_) => ValueResp { value: 0 },
+            Ok(donations) => ValueResp {
+                value: donations
+                    .iter()
+                    .fold(0, |acc, donation| acc + donation.net_amount),
+            },
+        }
     }
 }
 
@@ -44,20 +61,22 @@ pub mod exec {
         let mut old_value = DONATIONS
             .load(storage, &project_address)
             .expect("We already checked that the project_address exists");
+
+        let fee_amount = coin.amount.u128() / 10;
+        let net_amount = coin.amount.u128() - fee_amount;
+
         old_value.push(Donation {
             donor: info.sender.clone(),
-            amount: coin.amount.into(),
+            total_amount: coin.amount.into(),
+            net_amount,
         });
+
         DONATIONS
             .save(storage, &project_address, &old_value)
             .expect("We should be able to push a new donation");
-
-        let fee_amount = coin.amount.u128() / 10;
-        let net_balance = coin.amount.u128() - fee_amount;
-
         let project_bank_msg = BankMsg::Send {
             to_address: project_address.to_string(),
-            amount: coins(net_balance, "cw20"),
+            amount: coins(net_amount, "cw20"),
         };
 
         let fee_bank_msg = BankMsg::Send {
@@ -73,7 +92,7 @@ pub mod exec {
             .add_attribute("sender", info.sender.as_str())
             .add_message(project_bank_msg)
             .add_attribute("to", project_address.as_str())
-            .add_attribute("net_amount", net_balance.to_string())
+            .add_attribute("net_amount", net_amount.to_string())
             .add_message(fee_bank_msg)
             .add_attribute("fee_amount", fee_amount.to_string());
 
