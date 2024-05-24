@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_json_binary, Deps, DepsMut, Empty, Env, MessageInfo, QueryResponse, Response,
-    StdResult,
+    Deps, DepsMut, Empty, entry_point, Env, MessageInfo, QueryResponse, Response, StdResult,
+    to_json_binary,
 };
 
 use crate::contract::exec;
@@ -46,11 +46,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coins, Addr, Empty, Uint128};
+    use cosmwasm_std::{Addr, coins, Empty, Uint128};
     use cw_multi_test::{App, BasicApp, Contract, ContractWrapper, Executor};
+    use parameterized::parameterized;
 
-    use crate::msg::{DonationsTotalResp, ExecMsg, QueryMsg};
     use crate::{execute, instantiate, query};
+    use crate::msg::{DonationsTotalResp, ExecMsg, QueryMsg};
 
     #[track_caller]
     fn counting_contract() -> Box<dyn Contract<Empty>> {
@@ -73,8 +74,15 @@ mod tests {
         .unwrap()
     }
 
-    #[test]
-    fn donate_some_cw20_tokens() {
+    #[parameterized(
+    raw_donation = {
+        10, 10_000, 100_000
+    },
+    fee_amount = {
+        1, 500, 5_000
+    } )]
+    fn donate_some_cw20_tokens(raw_donation: u128, fee_amount: u128) {
+        let net_amount = raw_donation - fee_amount;
         let project_address =
             Addr::unchecked("cosmwasm1fventeva948ue0fzhp6xselr522rnqwger9wg7r0g9f4jemsqh6s9fcs2v");
 
@@ -85,7 +93,7 @@ mod tests {
         let mut app = App::new(|router, _api, storage| {
             router
                 .bank
-                .init_balance(storage, &donor, coins(20, "cw20"))
+                .init_balance(storage, &donor, coins(raw_donation, "cw20"))
                 .unwrap();
         });
 
@@ -96,7 +104,7 @@ mod tests {
             &ExecMsg::Donate {
                 project_address: project_address.clone(),
             },
-            &coins(10, "cw20"),
+            &coins(raw_donation, "cw20"),
         )
         .expect("We should be able to donate ");
 
@@ -105,7 +113,7 @@ mod tests {
                 .query_balance(project_address.clone(), "cw20")
                 .expect("We should have some cw20 tokens")
                 .amount,
-            Uint128::new(9)
+            Uint128::new(net_amount)
         );
 
         assert_eq!(
@@ -113,13 +121,13 @@ mod tests {
                 .query_balance(fee_collector_address, "cw20")
                 .expect("We should have some cw20 tokens")
                 .amount,
-            Uint128::new(1)
+            Uint128::new(fee_amount)
         );
 
         assert_eq!(
             DonationsTotalResp{
-                net_amount: 9,
-                raw_amount: 10
+                net_amount,
+                raw_amount: raw_donation
             },
             app.wrap()
                 .query_wasm_smart::<DonationsTotalResp>(

@@ -42,7 +42,9 @@ pub mod exec {
     ) -> StdResult<Response> {
         if !DONATIONS.has(storage, &project_address) {
             // return Err(StdError::not_found("Project_address not found"));
-            DONATIONS.save(storage, &project_address, &Vec::new());
+            DONATIONS
+                .save(storage, &project_address, &Vec::new())
+                .expect("should always be able to create a new entry in this map");
         }
 
         let received_funds = info
@@ -67,8 +69,13 @@ pub mod exec {
             .load(storage, &project_address)
             .expect("We already checked that the project_address exists");
 
-        let fee_amount = coin.amount.u128() / 10;
-        let net_amount = coin.amount.u128() - fee_amount;
+        let coin_amount = coin.amount.u128();
+        let fee_amount = if coin_amount < 10_000 {
+            coin_amount / 10 // 10%
+        } else {
+            coin_amount / 20 // 5%
+        };
+        let net_amount = coin_amount - fee_amount;
 
         old_value.push(Donation {
             donor: info.sender.clone(),
