@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct Donation {
     pub(crate) donor: Addr,
     pub(crate) net_amount: u128,
-    pub(crate) total_amount: u128,
+    pub(crate) raw_amount: u128,
 }
 
 /// many Project to many { User to amount }

@@ -1,7 +1,7 @@
 pub mod query {
-    use cosmwasm_std::{Addr, Storage};
+    use cosmwasm_std::{Addr, StdResult, Storage};
 
-    use crate::msg::ValueResp;
+    use crate::msg::{DonationsTotalResp, ValueResp};
     use crate::state::DONATIONS;
 
     pub fn value_incremented(n: u128) -> ValueResp {
@@ -11,14 +11,19 @@ pub mod query {
     pub(crate) fn donations_sent_to_project(
         storage: &dyn Storage,
         project_address: Addr,
-    ) -> ValueResp {
+    ) -> StdResult<DonationsTotalResp> {
         match DONATIONS.load(storage, &project_address) {
-            Err(_) => ValueResp { value: 0 },
-            Ok(donations) => ValueResp {
-                value: donations
+            Ok(donations) => {
+                Ok(donations
                     .iter()
-                    .fold(0, |acc, donation| acc + donation.net_amount),
-            },
+                    .fold(DonationsTotalResp::default(), |acc, donation| {
+                        DonationsTotalResp {
+                            net_amount: acc.net_amount + donation.net_amount,
+                            raw_amount: acc.raw_amount + donation.raw_amount,
+                        }
+                    }))
+            }
+            Err(e) => Err(e),
         }
     }
 }
@@ -67,13 +72,13 @@ pub mod exec {
 
         old_value.push(Donation {
             donor: info.sender.clone(),
-            total_amount: coin.amount.into(),
+            raw_amount: coin.amount.into(),
             net_amount,
         });
 
         DONATIONS
             .save(storage, &project_address, &old_value)
-            .expect("We should be able to push a new donation");
+            .expect("We should be able to push a new raw");
         let project_bank_msg = BankMsg::Send {
             to_address: project_address.to_string(),
             amount: coins(net_amount, "cw20"),

@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    Deps, DepsMut, Empty, entry_point, Env, MessageInfo, QueryResponse, Response, StdResult,
-    to_json_binary,
+    entry_point, to_json_binary, Deps, DepsMut, Empty, Env, MessageInfo, QueryResponse, Response,
+    StdResult,
 };
 
 use crate::contract::exec;
@@ -39,18 +39,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     match msg {
         ValueIncremented { value } => to_json_binary(&query::value_incremented(value)),
         QueryMsg::DonationsSentToProject { project_address } => to_json_binary(
-            &query::donations_sent_to_project(deps.storage, project_address),
+            &query::donations_sent_to_project(deps.storage, project_address)?,
         ),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, coins, Empty, Uint128};
+    use cosmwasm_std::{coins, Addr, Empty, Uint128};
     use cw_multi_test::{App, BasicApp, Contract, ContractWrapper, Executor};
 
+    use crate::msg::{DonationsTotalResp, ExecMsg, QueryMsg};
     use crate::{execute, instantiate, query};
-    use crate::msg::{ExecMsg, QueryMsg, ValueResp};
 
     #[track_caller]
     fn counting_contract() -> Box<dyn Contract<Empty>> {
@@ -117,14 +117,16 @@ mod tests {
         );
 
         assert_eq!(
-            9,
+            DonationsTotalResp{
+                net_amount: 9,
+                raw_amount: 10
+            },
             app.wrap()
-                .query_wasm_smart::<ValueResp>(
+                .query_wasm_smart::<DonationsTotalResp>(
                     contract_addr,
                     &QueryMsg::DonationsSentToProject { project_address },
                 )
                 .expect("We should be able to get a response from using DonationsSentToProject on the contract_addr ")
-                .value
         )
     }
 }
