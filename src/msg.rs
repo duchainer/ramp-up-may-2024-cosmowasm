@@ -1,4 +1,4 @@
-use cosmwasm_std::Coin;
+use cosmwasm_std::{Addr, Coin};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -11,7 +11,6 @@ pub struct InitMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Value {},
     ValueIncremented { value: u64 },
 }
 
@@ -24,6 +23,6 @@ pub struct ValueResp {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecMsg {
-    Donate {},
+    Donate { project_address: Addr },
     Withdraw {},
 }
