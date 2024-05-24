@@ -1,6 +1,8 @@
 use cosmwasm_std::{Addr, Coin};
 use serde::{Deserialize, Serialize};
 
+use crate::state::SomeCoin;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct InitMsg {
@@ -24,8 +26,8 @@ pub struct ValueResp {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct DonationsTotalResp {
-    pub net_amount: u128,
-    pub raw_amount: u128,
+    pub net_amount: SomeCoins,
+    pub raw_amount: SomeCoins,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

@@ -18,7 +18,7 @@ pub mod query {
                     .iter()
                     .fold(DonationsTotalResp::default(), |acc, donation| {
                         DonationsTotalResp {
-                            net_amount: acc.net_amount + donation.net_amount,
+                            net_amount: acc.net_amount + donation.net_amount(),
                             raw_amount: acc.raw_amount + donation.raw_amount,
                         }
                     }))
@@ -30,10 +30,11 @@ pub mod query {
 
 pub mod exec {
     use cosmwasm_std::{
-        Addr, BankMsg, coins, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Storage,
+        Addr, BankMsg, Coin, coins, Coins, DepsMut, Env, MessageInfo, Response, StdError,
+        StdResult, Storage,
     };
 
-    use crate::state::{Donation, DONATIONS, FEE_COLLECTOR, OWNER};
+    use crate::state::{Donation, DONATIONS, FEE_COLLECTOR, OWNER, SomeCoins};
 
     pub fn donate(
         storage: &mut dyn Storage,
@@ -56,32 +57,30 @@ pub mod exec {
             return Err(StdError::generic_err("Only deals with cw20 tokens"));
         }
 
-        if received_funds.len() > 1 {
-            return Err(StdError::generic_err(
-                "We should not get 2 elements with the cw20 denom",
-            ));
-        }
-        let coin = received_funds
-            .get(0)
-            .expect("The vec should be of size 1. We checked");
+        let mut donation = Donation {
+            donor: info.sender.clone(),
+            raw_amount: SomeCoins(Coins::default()),
+        };
+
+        received_funds.iter().for_each(|coin| {
+            donation
+                .raw_amount
+                .0
+                .add(Coin {
+                    denom: coin.denom.clone(),
+                    amount: coin.amount.clone(),
+                })
+                .unwrap()
+        });
 
         let mut old_value = DONATIONS
             .load(storage, &project_address)
             .expect("We already checked that the project_address exists");
 
-        let coin_amount = coin.amount.u128();
-        let fee_amount = if coin_amount < 10_000 {
-            coin_amount / 10 // 10%
-        } else {
-            coin_amount / 20 // 5%
-        };
+        let fee_amount = donation.fee_amount();
         let net_amount = coin_amount - fee_amount;
 
-        old_value.push(Donation {
-            donor: info.sender.clone(),
-            raw_amount: coin.amount.into(),
-            net_amount,
-        });
+        old_value.push(donation);
 
         DONATIONS
             .save(storage, &project_address, &old_value)

@@ -12,6 +12,7 @@ cw-storage-plus = "2.0.0"
 cw20 = "2.0.0"
 parameterized = "2.0.0"
 serde = { version = "1.0.202", features = ["derive"] }
+sscanf = "0.4.1"
 
 [dev-dependencies]
 cw-multi-test = "2.0.1"
